@@ -29,7 +29,9 @@
  */
 
 /********************* State Variables ***********************/
+#define TIMER_INCREMENT 15
 struct pkt currPkt;
+int currPktNum = 0;
 /***************** End of State Variables ********************/
 
 //TODO
@@ -47,8 +49,22 @@ struct pkt make_pkt(int seq, struct msg message, int checksum){
 /*
  * corrupted() checks whether the data contained in the message is corrupted
  */
-boolean corrupted(struct msg message){
-  return true;
+int corrupted(struct pkt pakcet){
+  return TRUE;
+}
+
+/*
+ * isACK() checks whether the received packet is an ACK that matches the
+ * current packet number
+ */
+int isACK(struct pkt packet){
+  return FALSE;
+}
+/*
+ * getChecksum() returns checksum for the given packet
+ */
+int getChecksum(struct pkt packet){
+  return 1;
 }
 
 /*
@@ -59,10 +75,11 @@ boolean corrupted(struct msg message){
  * in-order, and correctly, to the receiving side upper layer.
  */
 void A_output(struct msg message) {
-  sndpkt = make_pkt(); // todo
-  tolayer3(AENTITY, sndpkt);
+  struct pkt sndpkt = make_pkt(0,message,0); // todo
+  tolayer3(AEntity, sndpkt);
+  currPktNum = !currPktNum; //todo check bit flip
   // udt_send(sndpkt);
-  startTimer();
+  startTimer(AEntity,TIMER_INCREMENT);
 }
 
 
@@ -73,7 +90,9 @@ void A_output(struct msg message) {
  * packet is the (possibly corrupted) packet sent from the B-side.
  */
 void A_input(struct pkt packet) {
-
+  if(!corrupted(packet) && isACK(packet)){
+    stopTimer(AEntity);
+  }
 }
 
 /*
@@ -83,7 +102,9 @@ void A_input(struct pkt packet) {
  * and stoptimer() in the writeup for how the timer is started and stopped.
  */
 void A_timerinterrupt() {
-  tolayer3(AENTITY, currPkt);
+  tolayer3(AEntity, currPkt);
+  currPktNum = !currPktNum; //todo check bit flip
+  startTimer(AEntity,TIMER_INCREMENT);
 }
 
 /* The following routine will be called once (only) before any other    */
