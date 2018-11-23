@@ -29,43 +29,20 @@
  */
 
 /********************* State Variables ***********************/
-#define TIMER_INCREMENT 15
 struct pkt currPkt;
-int currPktNum = 0;
+int currPktNum;
 /***************** End of State Variables ********************/
 
-//TODO
-struct pkt make_pkt(int seq, struct msg message, int checksum){
-  struct pkt packet;
-  packet.seqnum = seq;
-  packet.acknum = 0;
-  packet.checksum = checksum;
-  for (int i = 0; i < MESSAGE_LENGTH; i ++){
-    packet.payload[i] = message.data[i];
-  }
-  currPkt = packet;
-}
-
-/*
- * corrupted() checks whether the data contained in the message is corrupted
- */
-int corrupted(struct pkt pakcet){
-  return TRUE;
-}
 
 /*
  * isACK() checks whether the received packet is an ACK that matches the
  * current packet number
  */
-int isACK(struct pkt packet){
+int A_isACK(struct pkt packet){
+  isACK(packet, currPktNum)
   return FALSE;
 }
-/*
- * getChecksum() returns checksum for the given packet
- */
-int getChecksum(struct pkt packet){
-  return 1;
-}
+
 
 /*
  * A_output(message), where message is a structure of type msg, containing
@@ -75,11 +52,7 @@ int getChecksum(struct pkt packet){
  * in-order, and correctly, to the receiving side upper layer.
  */
 void A_output(struct msg message) {
-  struct pkt sndpkt = make_pkt(0,message,0); // todo
-  tolayer3(AEntity, sndpkt);
-  currPktNum = !currPktNum; //todo check bit flip
-  // udt_send(sndpkt);
-  startTimer(AEntity,TIMER_INCREMENT);
+  currPkt = output(AEntity, message);
 }
 
 
@@ -90,10 +63,9 @@ void A_output(struct msg message) {
  * packet is the (possibly corrupted) packet sent from the B-side.
  */
 void A_input(struct pkt packet) {
-  if(!corrupted(packet) && isACK(packet)){
-    stopTimer(AEntity);
-  }
+  input(AEntity, packet);
 }
+
 
 /*
  * A_timerinterrupt()  This routine will be called when A's timer expires
@@ -102,12 +74,13 @@ void A_input(struct pkt packet) {
  * and stoptimer() in the writeup for how the timer is started and stopped.
  */
 void A_timerinterrupt() {
-  tolayer3(AEntity, currPkt);
-  currPktNum = !currPktNum; //todo check bit flip
-  startTimer(AEntity,TIMER_INCREMENT);
+    timerinterrupt(AEntity);
+    currPktNum = !currPktNum; //todo check bit flip
 }
+
 
 /* The following routine will be called once (only) before any other    */
 /* entity A routines are called. You can use it to do any initialization */
 void A_init() {
+  currPktNum = 0;
 }

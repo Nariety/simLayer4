@@ -19,8 +19,18 @@
 **********************************************************************/
 
 /********************* State Variables ***********************/
-
+struct pkt currPkt;
+int currPktNum;
 /***************** End of State Variables ********************/
+
+/*
+ * isACK() checks whether the received packet is an ACK that matches the
+ * current packet number
+ */
+int B currPkt = output(AEntity, message);_isACK(struct pkt packet){
+  isACK(packet, currPktNum)
+  return FALSE;
+}
 
 /*
  * Note that with simplex transfer from A-to-B, there is no routine  B_output()
@@ -31,7 +41,7 @@
   * implementation is bi-directional.
   */
  void B_output(struct msg message)  {
-
+   currPkt = output(BEntity, message);
  }
 
 /*
@@ -41,6 +51,7 @@
  * packet is the (possibly corrupted) packet sent from the A-side.
  */
 void B_input(struct pkt packet) {
+  input(BEntity, packet);
 }
 
 /*
@@ -50,6 +61,8 @@ void B_input(struct pkt packet) {
  * and stoptimer() in the writeup for how the timer is started and stopped.
  */
 void  B_timerinterrupt() {
+  timerinterrupt(BEntity);
+  currPktNum = !currPktNum; //todo check bit flip
 }
 
 /*
@@ -57,4 +70,5 @@ void  B_timerinterrupt() {
  * entity B routines are called. You can use it to do any initialization
  */
 void B_init() {
+  currPktNum = 0;
 }
