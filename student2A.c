@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "project2.h"
+// #include "project2.h"
 #include "student_common.h"
 
 /* ***************************************************************************
@@ -30,7 +30,7 @@
 
 /********************* State Variables ***********************/
 struct pkt currPkt;
-int currPktNum;
+int currSeqNum;
 /***************** End of State Variables ********************/
 
 
@@ -39,7 +39,7 @@ int currPktNum;
  * current packet number
  */
 int A_isACK(struct pkt packet){
-  isACK(packet, currPktNum)
+  isACK(packet, currSeqNum);
   return FALSE;
 }
 
@@ -53,6 +53,7 @@ int A_isACK(struct pkt packet){
  */
 void A_output(struct msg message) {
   currPkt = output(AEntity, message);
+  currSeqNum = !currSeqNum; //todo check bit flip
 }
 
 
@@ -63,7 +64,7 @@ void A_output(struct msg message) {
  * packet is the (possibly corrupted) packet sent from the B-side.
  */
 void A_input(struct pkt packet) {
-  input(AEntity, packet);
+  input(AEntity, packet,currSeqNum);
 }
 
 
@@ -74,13 +75,13 @@ void A_input(struct pkt packet) {
  * and stoptimer() in the writeup for how the timer is started and stopped.
  */
 void A_timerinterrupt() {
-    timerinterrupt(AEntity);
-    currPktNum = !currPktNum; //todo check bit flip
+    timerinterrupt(AEntity, currPkt);
+    currSeqNum = !currSeqNum; //todo check bit flip
 }
 
 
 /* The following routine will be called once (only) before any other    */
 /* entity A routines are called. You can use it to do any initialization */
 void A_init() {
-  currPktNum = 0;
+  currSeqNum = 0;
 }
