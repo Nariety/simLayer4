@@ -1,6 +1,6 @@
 #include "student_common.h"
 
-#define TIMER_INCREMENT 15
+#define RTT 10
 
 //TODO
 struct pkt make_pkt(int seq, struct msg message, int checksum){
@@ -53,7 +53,7 @@ struct pkt output(int AorB, struct msg message){
   sndpkt = make_pkt(seq,message,ack); // todo
   tolayer3(AorB, sndpkt);
   // udt_send(sndpkt);
-  startTimer(AorB, TIMER_INCREMENT);
+  startTimer(AorB, RTT);
   return sndpkt;
 }
 
@@ -67,7 +67,7 @@ void timerinterrupt(int AorB, struct pkt currPkt){
   if(getTimerStatus(AorB)){
     stopTimer(AorB);
     tolayer3(AorB, currPkt);
-    startTimer(AorB,TIMER_INCREMENT);
+    startTimer(AorB, RTT);
   }
 
 }

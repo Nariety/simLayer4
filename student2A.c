@@ -30,7 +30,8 @@
 
 /********************* State Variables ***********************/
 struct pkt currPkt;
-int currSeqNum;
+static int currSeqNum;
+static int currAckNum;
 /***************** End of State Variables ********************/
 
 
