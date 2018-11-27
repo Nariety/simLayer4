@@ -1,4 +1,3 @@
-// #include "project2.h"
 #include "student_common.h"
 
 /* ***************************************************************************
@@ -26,9 +25,9 @@ static int currAckNum;
  * isACK() checks whether the received packet is an ACK that matches the
  * current packet number
  */
-int B_isACK(struct pkt packet){
-  return isACK(packet, currSeqNum);;
-}
+// int B_isACK(struct pkt packet){
+//   return isACK(packet, currSeqNum);;
+// }
 
 /*
  * Note that with simplex transfer from A-to-B, there is no routine  B_output()
@@ -50,7 +49,10 @@ int B_isACK(struct pkt packet){
  * packet is the (possibly corrupted) packet sent from the A-side.
  */
 void B_input(struct pkt packet) {
-  input(BEntity, packet, currSeqNum, nextSeqNum);
+  if(input(BEntity, packet, currSeqNum)){
+    currSeqNum = (currSeqNum + 1) % 2;
+    currAckNum = (currAckNum + 1) % 2;
+  }
 }
 
 /*
@@ -70,4 +72,6 @@ void  B_timerinterrupt() {
  */
 void B_init() {
   currSeqNum = 0;
+  currAckNum = 0;
+  common_init();
 }

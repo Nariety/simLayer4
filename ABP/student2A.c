@@ -1,4 +1,3 @@
-// #include "project2.h"
 #include "student_common.h"
 
 /* ***************************************************************************
@@ -37,9 +36,9 @@ static int currAckNum;
  * isACK() checks whether the received packet is an ACK that matches the
  * current packet number
  */
-int A_isACK(struct pkt packet){
-  return isACK(packet, currSeqNum);
-}
+// int A_isACK(struct pkt packet){
+//   return isACK(packet, currSeqNum);
+// }
 
 
 /*
@@ -62,7 +61,12 @@ void A_output(struct msg message) {
  * packet is the (possibly corrupted) packet sent from the B-side.
  */
 void A_input(struct pkt packet) {
-  input(AEntity, packet, currSeqNum, nextSeqNum);
+  if(input(AEntity, packet, currSeqNum)){
+    currSeqNum = (currSeqNum + 1) % 2;
+    currAckNum = (currAckNum + 1) % 2;
+  }
+  // printf("***********packet received for a\n");
+  // ;
 }
 
 
@@ -74,21 +78,13 @@ void A_input(struct pkt packet) {
  */
 void A_timerinterrupt() {
     timerinterrupt(AEntity);
-    currSeqNum = (currSeqNum + 1) % 2;
 }
 
 
 /* The following routine will be called once (only) before any other    */
 /* entity A routines are called. You can use it to do any initialization */
 void A_init() {
-  int i;
   currSeqNum = 0;
   currAckNum = 0;
-
-  pkt2snd.seqnum = 0;
-  pkt2snd.acknum = 0;
-  pkt2snd.checksum = 0;
-  for (i = 0; i < MESSAGE_LENGTH; i++){
-    pkt2snd.payload[i] = 0;
-  }
+  common_init();
 }

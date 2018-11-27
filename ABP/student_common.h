@@ -14,11 +14,12 @@
   */
 
 void make_pkt(struct pkt *packet, int seq,int ack, char *payload);
-int corruptedHuh(struct pkt packet);
-int isACK(struct pkt packet, int currSeqNum);
-int getChecksum(struct msg message, int seq, int ack);
+void make_msg(struct msg *message, char *payload);
+int corruptedHuh(struct pkt *packet);
+// int isACK(struct pkt packet, int currSeqNum);
+int getChecksum(char *payload, int seq, int ack);
 
 void output(int AorB, struct msg message, int seq, int ack);
 void input(int AorB, struct pkt packet, int currSeqNum);
 void timerinterrupt(int AorB);
-void init();
+void common_init();
