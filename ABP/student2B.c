@@ -1,5 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
 // #include "project2.h"
 #include "student_common.h"
 
@@ -20,6 +18,7 @@
 
 /********************* State Variables ***********************/
 static int currSeqNum;
+static int nextSeqNum;
 static int currAckNum;
 /***************** End of State Variables ********************/
 
@@ -40,7 +39,7 @@ int B_isACK(struct pkt packet){
   * implementation is bi-directional.
   */
  void B_output(struct msg message)  {
-   output(BEntity, message, currentSeqNum, currentAckNum);
+   output(BEntity, message, currSeqNum, currAckNum);
    currSeqNum = (currSeqNum + 1) % 2;
  }
 
@@ -51,7 +50,7 @@ int B_isACK(struct pkt packet){
  * packet is the (possibly corrupted) packet sent from the A-side.
  */
 void B_input(struct pkt packet) {
-  input(BEntity, packet, currSeqNum);
+  input(BEntity, packet, currSeqNum, nextSeqNum);
 }
 
 /*
@@ -61,7 +60,7 @@ void B_input(struct pkt packet) {
  * and stoptimer() in the writeup for how the timer is started and stopped.
  */
 void  B_timerinterrupt() {
-  timerinterrupt(BEntity,currPkt);
+  timerinterrupt(BEntity);
   currSeqNum = (currSeqNum + 1) % 2;
 }
 

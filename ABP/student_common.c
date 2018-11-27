@@ -1,5 +1,3 @@
-#include <string.h>
-#include <stdlib.h>
 #include "student_common.h"
 
 #define RTT 10
@@ -22,8 +20,14 @@ void make_pkt(struct pkt *packet, int seq, int ack, char *payload){
 /*
  * corrupted() checks whether the data contained in the message is corrupted
  */
-int corrupted(struct pkt pakcet){
-  return TRUE; //TODO
+int corruptedHuh(struct pkt *pakcet){
+  int newChecksum = getChecksum(packet->payload, packet->seqnum, packet->acknum);
+  if(newChecksum != packet->checksum){
+    return TRUE;
+  }
+  else{
+    return FALSE;
+  }
 }
 
 /*
@@ -34,24 +38,11 @@ int isACK(struct pkt packet, int currSeqNum){
   return FALSE; //TODO
 }
 
-/*
- * getChecksum() returns true if checksum checks up in the given packet; false otherwise
- */
-int checkChecksum(struct pkt packet){
-  int newChecksum = getChecksum(packet.payload, packet.seqnum, packet.acknum);
-  if(newChecksum != packet.checksum){
-    return FALSE;
-  }
-  else{
-    return TRUE;
-  }
-}
-
-int getChecksum(struct msg message, int seq, int ack){
-  unsigned char *data = malloc(sizeof(char)*strlen(message.data) + sizeof(int) * 2);
+int getChecksum(char *payload, int seq, int ack){
+  unsigned char *data = malloc(sizeof(char)*strlen(payload) + sizeof(int) * 2);
   data[0] = (unsigned char)seq;
   data[1] = (unsigned char)ack;
-  strcat(data, message.data);
+  strcat(data, payload);
   // char *data = message.data;
   int i, j;
   unsigned int byte, crc, mask;
@@ -66,6 +57,11 @@ int getChecksum(struct msg message, int seq, int ack){
     }
     i++;
   }
+  printf("original data: seq%d ack%d ",seq,ack);
+  for (i=0; i<MESSAGE_LENGTH; i++)
+      printf("%c", message.data[i] );
+  printf("checksum: %d\n", ~crc);
+
   return ~crc;
 }
 
@@ -73,24 +69,31 @@ int getChecksum(struct msg message, int seq, int ack){
  * output() makes and sends a packet with the given message to
  */
 void output(int AorB, struct msg message, int seq, int ack){
-  make_pkt(&pkt2snd, (seq+1)%2, seq, message.data)
+  make_pkt(&pkt2snd, (seq+1)%2, seq, message.data);
   tolayer3(AorB, pkt2snd);
   // udt_send(sndpkt);
   startTimer(AorB, RTT);
 }
 
 void input(int AorB, struct pkt packet,int currSeqNum){
-  if(!corrupted(packet) && isACK(packet,currSeqNum)){
-    stopTimer(AorB);
+  int i;
+  char payload2snd[MESSAGE_LENGTH];
+  if(!corruptedHuh(&packet)){
+    if(packet.acknum == currSeqNum){
+
+    }
   }
+
+  // if(!corruptedHuh(&packet) && isACK(packet,currSeqNum)){
+  //   stopTimer(AorB);
+  // }
 }
 
-void timerinterrupt(int AorB, struct pkt currPkt){
+void timerinterrupt(int AorB){
   if(getTimerStatus(AorB)){
-    tolayer3(AorB, currPkt);
+    tolayer3(AorB, pkt2snd);
     startTimer(AorB, RTT);
   }
-
 }
 
 void init();

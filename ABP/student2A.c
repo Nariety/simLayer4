@@ -1,5 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
 // #include "project2.h"
 #include "student_common.h"
 
@@ -30,6 +28,7 @@
 
 /********************* State Variables ***********************/
 static int currSeqNum;
+static int nextSeqNum;
 static int currAckNum;
 /***************** End of State Variables ********************/
 
@@ -51,7 +50,7 @@ int A_isACK(struct pkt packet){
  * in-order, and correctly, to the receiving side upper layer.
  */
 void A_output(struct msg message) {
-  output(AEntity, message, currentSeqNum, currentAckNum);
+  output(AEntity, message, currSeqNum, currAckNum);
   currSeqNum = (currSeqNum + 1) % 2;
 }
 
@@ -63,7 +62,7 @@ void A_output(struct msg message) {
  * packet is the (possibly corrupted) packet sent from the B-side.
  */
 void A_input(struct pkt packet) {
-  input(AEntity, packet,currSeqNum);
+  input(AEntity, packet, currSeqNum, nextSeqNum);
 }
 
 
@@ -74,7 +73,7 @@ void A_input(struct pkt packet) {
  * and stoptimer() in the writeup for how the timer is started and stopped.
  */
 void A_timerinterrupt() {
-    timerinterrupt(AEntity, currPkt);
+    timerinterrupt(AEntity);
     currSeqNum = (currSeqNum + 1) % 2;
 }
 
@@ -82,5 +81,14 @@ void A_timerinterrupt() {
 /* The following routine will be called once (only) before any other    */
 /* entity A routines are called. You can use it to do any initialization */
 void A_init() {
+  int i;
   currSeqNum = 0;
+  currAckNum = 0;
+
+  pkt2snd.seqnum = 0;
+  pkt2snd.acknum = 0;
+  pkt2snd.checksum = 0;
+  for (i = 0; i < MESSAGE_LENGTH; i++){
+    pkt2snd.payload[i] = 0;
+  }
 }
