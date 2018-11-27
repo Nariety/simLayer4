@@ -17,17 +17,22 @@
 
    Compile as gcc -g project2.c student2.c -o p2
 **********************************************************************/
+#define RTT         20
+#define BUFFER_SIZE 50
 
-#define RTT         25
-#define BUFFER_SIZE 10
-
+#define RECEIVING   17
+#define WAITING     18
 /********************* State Variables ***********************/
+static int pktcount = 0;
+static int aStatus;
 static int aSeq;
 static int bSeq;
 static struct pkt pktAsnd;
+static struct msg msgAsndBuffer[BUFFER_SIZE];
+static int bufferHead;
+static int bufferBase;
 static struct pkt pktBsnd;
 static struct msg msg2snd;
-static struct msg msg2rcv;
 static char *ackMsg = "ACK";
 /***************** End of State Variables ********************/
 
@@ -39,11 +44,13 @@ static char *ackMsg = "ACK";
  * All these routines are in layer 4.
  */
 
+int flip(int a){return (a+1)%2;}
+
 int getChecksum(char *payload, int seq, int ack){
   char data[MESSAGE_LENGTH+2];
-  memcpy(data, payload, MESSAGE_LENGTH);
-  data[MESSAGE_LENGTH] = ( char)seq;
-  data[MESSAGE_LENGTH+1] = ( char)ack;
+  strcpy(data, payload);
+  data[MESSAGE_LENGTH] = (char)seq;
+  data[MESSAGE_LENGTH+1] = (char)ack;
 
   // char *data = message.data;
   int i, j;
@@ -59,13 +66,6 @@ int getChecksum(char *payload, int seq, int ack){
     }
     i++;
   }
-  // printf("original data: seq%d ack%d ",seq,ack);
-  // for (i=0; i<MESSAGE_LENGTH; i++)
-  //     printf("%c", payload[i] );
-  // printf("\ndata stored in data: seq%d ack%d",data[20],data[21]);
-  // for (i=2; i<MESSAGE_LENGTH+2; i++)
-  //     printf("%c", data[i] );
-  // printf("checksum: %d\n\n", ~crc);
   return ~crc;
 }
 
@@ -74,11 +74,11 @@ void make_pkt(struct pkt *packet, int seq, int ack, char *payload){
   packet->seqnum = seq;
   packet->acknum = ack;
   // printf("geting checksum for new packet\n");
-  packet->checksum = getChecksum(payload,seq,ack);
-
   for (int i = 0; i < MESSAGE_LENGTH; i++){
     packet->payload[i] = payload[i];
   }
+  packet->checksum = getChecksum(packet->payload,seq,ack);
+  // return packet;
 }
 
 void make_msg(struct msg *message, char *payload){
@@ -91,10 +91,10 @@ void make_msg(struct msg *message, char *payload){
  * corrupted() checks whether the data contained in the message is corrupted
  */
 int corruptedHuh(struct pkt *packet){
-  // printf("checking the checksum\n");
   int newChecksum = getChecksum(packet->payload, packet->seqnum, packet->acknum);
   if(newChecksum != packet->checksum){
     printf("*****Corrupted!*****\n");
+    printf("newChecksum %d  checksum %d", newChecksum, packet->checksum);
     return TRUE;
   }
   else{
@@ -110,13 +110,21 @@ int corruptedHuh(struct pkt *packet){
  * in-order, and correctly, to the receiving side upper layer.
  */
 void A_output(struct msg message) {
-  make_pkt(&pktAsnd, aSeq, aSeq, message.data);
-  printf("Packet sent: seq%d ", aSeq);
-  for (int i=0; i<MESSAGE_LENGTH; i++)
-    printf("%c", message.data[i]);
-  printf("\n");
-  tolayer3(AEntity, pktAsnd);
-  startTimer(AEntity, RTT);
+  // printf("Packet sent in A_output: seq%d ", aSeq);
+  // printf("bufferHead%d  bufferBase%d", bufferHead,bufferBase);
+  // for (int i=0; i<MESSAGE_LENGTH; i++)
+  //   printf("%c", message.data[i]);
+  // printf("\n");
+  printf("length of A_out message:%d\n", strlen(message.data));
+  if(aStatus == WAITING){  // if there is a packet being sent
+    msgAsndBuffer[bufferHead%BUFFER_SIZE] = message;
+  }
+  else{
+    make_pkt(&pktAsnd, aSeq, aSeq, message.data);
+    tolayer3(AEntity, pktAsnd);
+    aStatus = WAITING;
+    startTimer(AEntity, RTT);
+  }
 }
 
 /*
@@ -134,9 +142,18 @@ void B_output(struct msg message)  {
  * packet is the (possibly corrupted) packet sent from the B-side.
  */
 void A_input(struct pkt packet) {
-  if(!corruptedHuh(&packet) && packet.seqnum == aSeq){
-    aSeq = (aSeq+1) % 2;
+  // printf("***A seq%d aSeq%d\n",packet.seqnum,aSeq);
+  if(!corruptedHuh(&packet) && packet.seqnum == aSeq && !strcmp(ackMsg,packet.payload)){
+    // printf("*****correct ack!");
     stopTimer(AEntity);
+    // pktcount++;
+    // printf("Count%d", pktcount);
+    aStatus = RECEIVING;
+    aSeq = flip(aSeq);
+    if(bufferBase != bufferHead){
+      bufferBase++;
+      A_output(msgAsndBuffer[bufferBase%BUFFER_SIZE]);
+    }
   }
 }
 
@@ -147,14 +164,23 @@ void A_input(struct pkt packet) {
  * and stoptimer() in the writeup for how the timer is started and stopped.
  */
 void A_timerinterrupt() {
-  tolayer3(BEntity, pktAsnd);
+  stopTimer(AEntity);
+  tolayer3(AEntity, pktAsnd);
+  // printf("(On Timer)Packet sent: seq%d ", aSeq);
+  // for (int i=0; i<MESSAGE_LENGTH; i++)
+  //   printf("%c", pktAsnd.payload[i]);
+  // printf("\n");
   startTimer(AEntity, RTT);
 }
 
 /* The following routine will be called once (only) before any other    */
 /* entity A routines are called. You can use it to do any initialization */
 void A_init() {
+  aStatus = RECEIVING;
   aSeq = 0;
+  bufferHead = 0;
+  bufferBase = 0;
+  // *pkts2snd = createQueue();
 }
 
 
@@ -169,16 +195,20 @@ void A_init() {
  * packet is the (possibly corrupted) packet sent from the A-side.
  */
 void B_input(struct pkt packet){
-  printf("Packet received!!\n");
+  printf("B_input line \n");
   if(!corruptedHuh(&packet) && packet.seqnum == bSeq){ // correct package is received
+    // printf("***A correct packet received!!\n");
+    printf("length of message:%d\n", strlen(packet.payload));
     make_msg(&msg2snd, packet.payload);
     tolayer5(BEntity,msg2snd);
+    // printf("bSeq%d\n",bSeq);
     make_pkt(&pktBsnd, bSeq, bSeq, ackMsg);
     tolayer3(BEntity,pktBsnd);
-    bSeq = (bSeq+1) % 2;
+    bSeq = flip(bSeq);
   }
   else if(!corruptedHuh(&packet) && packet.seqnum != bSeq){ // duplicate message received
-    make_pkt(&pktBsnd, bSeq, bSeq, ackMsg); //this could probably be left out
+    printf("***B: wrong seq%d correct seq%d\n",packet.seqnum,bSeq);
+    // make_pkt(&pktBsnd, (bSeq+1) % 2, (bSeq+1) % 2, ackMsg); //this could probably be left out
     tolayer3(BEntity,pktBsnd);
   }
 }
