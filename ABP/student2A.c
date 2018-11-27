@@ -29,7 +29,6 @@
  */
 
 /********************* State Variables ***********************/
-struct pkt currPkt;
 static int currSeqNum;
 static int currAckNum;
 /***************** End of State Variables ********************/
@@ -40,7 +39,6 @@ static int currAckNum;
  * current packet number
  */
 int A_isACK(struct pkt packet){
-
   return isACK(packet, currSeqNum);
 }
 
@@ -53,7 +51,7 @@ int A_isACK(struct pkt packet){
  * in-order, and correctly, to the receiving side upper layer.
  */
 void A_output(struct msg message) {
-  currPkt = output(AEntity, message);
+  output(AEntity, message, currentSeqNum, currentAckNum);
   currSeqNum = (currSeqNum + 1) % 2;
 }
 

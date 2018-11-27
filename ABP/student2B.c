@@ -19,8 +19,8 @@
 **********************************************************************/
 
 /********************* State Variables ***********************/
-struct pkt currPkt;
-int currSeqNum;
+static int currSeqNum;
+static int currAckNum;
 /***************** End of State Variables ********************/
 
 /*
@@ -28,8 +28,7 @@ int currSeqNum;
  * current packet number
  */
 int B_isACK(struct pkt packet){
-  isACK(packet, currSeqNum);
-  return FALSE;
+  return isACK(packet, currSeqNum);;
 }
 
 /*
@@ -41,7 +40,7 @@ int B_isACK(struct pkt packet){
   * implementation is bi-directional.
   */
  void B_output(struct msg message)  {
-   currPkt = output(BEntity, message);
+   output(BEntity, message, currentSeqNum, currentAckNum);
    currSeqNum = (currSeqNum + 1) % 2;
  }
 

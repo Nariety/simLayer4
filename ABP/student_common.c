@@ -1,20 +1,21 @@
 #include <string.h>
-#include "project2.h"
+#include <stdlib.h>
 #include "student_common.h"
 
 #define RTT 10
 
-//TODO
-struct pkt make_pkt(int seq, struct msg message, int checksum){
-  struct pkt packet;
-  packet.seqnum = seq;
-  packet.acknum = 0;
-  packet.checksum = checksum;
-  // maybe the TODO's below are not necessary
-  //TODO prepend 0's to message if the message is shorter than message MESSAGE_LENGTH
-  //TODO ? what char size in c? 8bytes?
+static struct pkt pkt2snd;
+static struct pkt pkt2rcv;
+
+void make_pkt(struct pkt *packet, int seq, int ack, char *payload){
+  // int length = strlen(payload);
+
+  packet->seqnum = seq;
+  packet->acknum = ack;
+  packet->checksum = getChecksum(payload,seq,ack);
+
   for (int i = 0; i < MESSAGE_LENGTH; i++){
-    packet.payload[i] = message.data[i];
+    packet->payload[i] = payload[i];
   }
 }
 
@@ -37,7 +38,7 @@ int isACK(struct pkt packet, int currSeqNum){
  * getChecksum() returns true if checksum checks up in the given packet; false otherwise
  */
 int checkChecksum(struct pkt packet){
-  int newChecksum = getChecksum(packet.payload, packet.seq, packet.ack);
+  int newChecksum = getChecksum(packet.payload, packet.seqnum, packet.acknum);
   if(newChecksum != packet.checksum){
     return FALSE;
   }
@@ -46,11 +47,12 @@ int checkChecksum(struct pkt packet){
   }
 }
 
-int genChecksum(char *payload, int seq, int ack){
-
-  unsigned char *data = malloc(sizeof(char)*strlen(payload) + sizeof(int) * 2);
-
-
+int getChecksum(struct msg message, int seq, int ack){
+  unsigned char *data = malloc(sizeof(char)*strlen(message.data) + sizeof(int) * 2);
+  data[0] = (unsigned char)seq;
+  data[1] = (unsigned char)ack;
+  strcat(data, message.data);
+  // char *data = message.data;
   int i, j;
   unsigned int byte, crc, mask;
   i = 0;
@@ -70,16 +72,11 @@ int genChecksum(char *payload, int seq, int ack){
 /*
  * output() makes and sends a packet with the given message to
  */
-struct pkt output(int AorB, struct msg message){
-  int seq = 0; //TODO
-  int ack = 0; //TODO
-  int checksum = genChecksum(message,seq,ack);
-  struct pkt sndpkt;
-  sndpkt = make_pkt(seq,message,ack); // todo
-  tolayer3(AorB, sndpkt);
+void output(int AorB, struct msg message, int seq, int ack){
+  make_pkt(&pkt2snd, (seq+1)%2, seq, message.data)
+  tolayer3(AorB, pkt2snd);
   // udt_send(sndpkt);
   startTimer(AorB, RTT);
-  return sndpkt;
 }
 
 void input(int AorB, struct pkt packet,int currSeqNum){
