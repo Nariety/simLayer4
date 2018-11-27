@@ -115,7 +115,7 @@ void A_output(struct msg message) {
   // for (int i=0; i<MESSAGE_LENGTH; i++)
   //   printf("%c", message.data[i]);
   // printf("\n");
-  printf("length of A_out message:%d\n", strlen(message.data));
+  // printf("length of A_out message:%d\n", strlen(message.data));
   if(aStatus == WAITING){  // if there is a packet being sent
     msgAsndBuffer[bufferHead%BUFFER_SIZE] = message;
   }
@@ -166,10 +166,6 @@ void A_input(struct pkt packet) {
 void A_timerinterrupt() {
   stopTimer(AEntity);
   tolayer3(AEntity, pktAsnd);
-  // printf("(On Timer)Packet sent: seq%d ", aSeq);
-  // for (int i=0; i<MESSAGE_LENGTH; i++)
-  //   printf("%c", pktAsnd.payload[i]);
-  // printf("\n");
   startTimer(AEntity, RTT);
 }
 
@@ -198,8 +194,8 @@ void B_input(struct pkt packet){
   printf("B_input line \n");
   if(!corruptedHuh(&packet) && packet.seqnum == bSeq){ // correct package is received
     // printf("***A correct packet received!!\n");
-    printf("length of message:%d\n", strlen(packet.payload));
     make_msg(&msg2snd, packet.payload);
+    // printf("length of message:%d\n", strlen(msg2snd.data));
     tolayer5(BEntity,msg2snd);
     // printf("bSeq%d\n",bSeq);
     make_pkt(&pktBsnd, bSeq, bSeq, ackMsg);
