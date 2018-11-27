@@ -1,4 +1,3 @@
-#include "project2.h"
 /*
  * This file contains function prototypes of common functions in student2A and
  * student2B
@@ -12,7 +11,7 @@ struct pkt make_pkt(int seq, struct msg message, int checksum);
 int corrupted(struct pkt packet);
 int isACK(struct pkt packet, int currSeqNum);
 int checkChecksum(struct pkt packet);
-int genChecksum(struct msg message, int seq, int ack);
+int genChecksum(char *data, int seq, int ack);
 
 struct pkt output(int AorB, struct msg message);
 void input(int AorB, struct pkt packet, int currSeqNum);

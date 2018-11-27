@@ -1,3 +1,5 @@
+#include <string.h>
+#include "project2.h"
 #include "student_common.h"
 
 #define RTT 10
@@ -11,7 +13,7 @@ struct pkt make_pkt(int seq, struct msg message, int checksum){
   // maybe the TODO's below are not necessary
   //TODO prepend 0's to message if the message is shorter than message MESSAGE_LENGTH
   //TODO ? what char size in c? 8bytes?
-  for (int i = 0; i < MESSAGE_LENGTH; i ++){
+  for (int i = 0; i < MESSAGE_LENGTH; i++){
     packet.payload[i] = message.data[i];
   }
 }
@@ -35,11 +37,34 @@ int isACK(struct pkt packet, int currSeqNum){
  * getChecksum() returns true if checksum checks up in the given packet; false otherwise
  */
 int checkChecksum(struct pkt packet){
-  return 1; //TODO
+  int newChecksum = getChecksum(packet.payload, packet.seq, packet.ack);
+  if(newChecksum != packet.checksum){
+    return FALSE;
+  }
+  else{
+    return TRUE;
+  }
 }
 
-int genChecksum(struct msg message, int seq, int ack){
-  return 1; //TODO
+int genChecksum(char *payload, int seq, int ack){
+
+  unsigned char *data = malloc(sizeof(char)*strlen(payload) + sizeof(int) * 2);
+
+
+  int i, j;
+  unsigned int byte, crc, mask;
+  i = 0;
+  crc = 0xFFFFFFFF;
+  while (data[i] != 0){
+    byte = data[i];
+    crc = crc ^ byte;
+    for (j = 7; j > 0; j--){
+      mask = -(crc & 1);
+      crc = (crc >> 1) ^ (0xEDB88320 & mask);
+    }
+    i++;
+  }
+  return ~crc;
 }
 
 /*
@@ -65,7 +90,6 @@ void input(int AorB, struct pkt packet,int currSeqNum){
 
 void timerinterrupt(int AorB, struct pkt currPkt){
   if(getTimerStatus(AorB)){
-    stopTimer(AorB);
     tolayer3(AorB, currPkt);
     startTimer(AorB, RTT);
   }

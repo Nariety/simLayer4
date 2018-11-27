@@ -40,8 +40,8 @@ static int currAckNum;
  * current packet number
  */
 int A_isACK(struct pkt packet){
-  isACK(packet, currSeqNum);
-  return FALSE;
+
+  return isACK(packet, currSeqNum);
 }
 
 
@@ -54,7 +54,7 @@ int A_isACK(struct pkt packet){
  */
 void A_output(struct msg message) {
   currPkt = output(AEntity, message);
-  currSeqNum = !currSeqNum; //todo check bit flip
+  currSeqNum = (currSeqNum + 1) % 2;
 }
 
 
@@ -77,7 +77,7 @@ void A_input(struct pkt packet) {
  */
 void A_timerinterrupt() {
     timerinterrupt(AEntity, currPkt);
-    currSeqNum = !currSeqNum; //todo check bit flip
+    currSeqNum = (currSeqNum + 1) % 2;
 }
 
 

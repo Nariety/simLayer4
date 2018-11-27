@@ -42,7 +42,7 @@ int B_isACK(struct pkt packet){
   */
  void B_output(struct msg message)  {
    currPkt = output(BEntity, message);
-   currSeqNum = !currSeqNum; //todo check bit flip
+   currSeqNum = (currSeqNum + 1) % 2;
  }
 
 /*
@@ -63,7 +63,7 @@ void B_input(struct pkt packet) {
  */
 void  B_timerinterrupt() {
   timerinterrupt(BEntity,currPkt);
-  currSeqNum = !currSeqNum; //todo check bit flip
+  currSeqNum = (currSeqNum + 1) % 2;
 }
 
 /*
