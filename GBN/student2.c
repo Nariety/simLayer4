@@ -18,7 +18,7 @@
    Compile as gcc -g project2.c student2.c -o p2
 **********************************************************************/
 #define RTT         1000
-#define BUFFER_SIZE 800
+#define BUFFER_SIZE 8000
 #define WINDOW_SIZE 8
 /********************* State Variables ***********************/
 // static struct pkt pktAsnd;
@@ -63,8 +63,7 @@ static char *ackMsg = "ACK";
  }
 
 void makeAck(struct pkt *packet){
-  packet->seqnum = expectedSeqnum;
-  strcpy(packet->payload, ackMsg);
+  packet->acknum = 1;
   packet->checksum = getChecksum(packet->payload,packet->seqnum, packet->acknum);
 }
 
@@ -79,15 +78,14 @@ void goBackN(){
 }
 
 void add_pkt(struct msg message){
-  struct pkt *packet = (struct pkt*)malloc(sizeof(struct pkt));
-  packet->seqnum = nextSeqnum;
-  packet->acknum = nextSeqnum;
+  pktABuffer[nextSeqnum] = (struct pkt*)malloc(sizeof(struct pkt));
+  pktABuffer[nextSeqnum]->seqnum = nextSeqnum;
+  pktABuffer[nextSeqnum]->acknum = nextSeqnum;
   // printf("geting checksum for new packet\n");
   for (int i = 0; i < MESSAGE_LENGTH; i++){
-    packet->payload[i] = message.data[i];
+    pktABuffer[nextSeqnum]->payload[i] = message.data[i];
   }
-  packet->checksum = getChecksum(packet->payload,nextSeqnum,nextSeqnum);
-  pktABuffer[nextSeqnum] = packet;
+  pktABuffer[nextSeqnum]->checksum = getChecksum(pktABuffer[nextSeqnum]->payload,nextSeqnum,nextSeqnum);
 }
 
 void make_msg(struct msg *message, char *payload){
@@ -151,7 +149,7 @@ void B_output(struct msg message)  {
  */
 void A_input(struct pkt packet) {
   // printf("***A seq%d aSeq%d\n",packet.seqnum,aSeq);
-  if(!corruptedHuh(&packet) && packet.seqnum >= bufferBase && !strcmp(ackMsg,packet.payload)){
+  if(!corruptedHuh(&packet) && packet.seqnum >= bufferBase && packet.acknum == 1){
     bufferBase = packet.seqnum + 1;
     if(bufferBase == nextSeqnum){
       stopTimer(AEntity);

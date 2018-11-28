@@ -1,6 +1,8 @@
 # Project Specific
-p2.dsYM
-p2
+ABP_hliang.dsYM
+ABP_hliang
+GBN_hliang.dsYM
+GBN_hliang
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
