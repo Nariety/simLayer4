@@ -45,57 +45,69 @@ static char *ackMsg = "ACK";
  * All these routines are in layer 4.
  */
 
- int flip(int a){return (a+1)%2;}
+/*
+ *  Returns void.
+ */
+int flip(int a){return (a+1)%2;}
 
- int getChecksum(char *payload, int seq, int ack){
-   char data[MESSAGE_LENGTH+2];
-   strcpy(data, payload);
-   data[MESSAGE_LENGTH] = (char)seq;
-   data[MESSAGE_LENGTH+1] = (char)ack;
+/*
+ * getChecksum() uses CRC32 algorithm to calculate checksum for sequance number,
+ * acknowledge number, and the payload itself. Returns an int.
+ */
+int getChecksum(char *payload, int seq, int ack){
+  // add all information into one data string
+  char data[MESSAGE_LENGTH+2];
+  strncpy(data, payload,MESSAGE_LENGTH);
+  data[MESSAGE_LENGTH] = (char)seq;
+  data[MESSAGE_LENGTH+1] = (char)ack;
 
-   // char *data = message.data;
-   int i, j;
-   unsigned int byte, crc, mask;
-   i = 0;
-   crc = 0xFFFFFFFF;
-   while (data[i] != 0){
-     byte = data[i];
-     crc = crc ^ byte;
-     for (j = 7; j > 0; j--){
-       mask = -(crc & 1);
-       crc = (crc >> 1) ^ (0xEDB88320 & mask);
-     }
-     i++;
-   }
-   return ~crc;
- }
+  // CRC32 implementation
+  int i, j;
+  unsigned int byte, crc, mask;
+  i = 0;
+  crc = 0xFFFFFFFF;
+  while (data[i] != 0){
+    byte = data[i];
+    crc = crc ^ byte;
+    for (j = 7; j > 0; j--){
+      mask = -(crc & 1);
+      crc = (crc >> 1) ^ (0xEDB88320 & mask);
+    }
+    i++;
+  }
+  return ~crc;
+}
 
- void make_pkt(struct pkt *packet, int seq, int ack, char *payload){
-   // int length = strlen(payload);
-   packet->seqnum = seq;
-   packet->acknum = ack;
-   // printf("geting checksum for new packet\n");
-   for (int i = 0; i < MESSAGE_LENGTH; i++){
-     packet->payload[i] = payload[i];
-   }
-   packet->checksum = getChecksum(packet->payload,seq,ack);
-   // return packet;
- }
+/*
+ * make_pkt() fills the fields of the given packet with the given seqnum, acknum,
+ * and payload, along with the calculated checksum. Returns void.
+ */
+void make_pkt(struct pkt *packet, int seq, int ack, char *payload){
+  packet->seqnum = seq;
+  packet->acknum = ack;
+  for (int i = 0; i < MESSAGE_LENGTH; i++){
+    packet->payload[i] = payload[i];
+  }
+  packet->checksum = 0;
+  packet->checksum = getChecksum(packet->payload,seq,ack);
+}
 
- void make_msg(struct msg *message, char *payload){
-   for (int i = 0; i < MESSAGE_LENGTH; i++){
-     message->data[i] = payload[i];
-   }
- }
+/*
+ * make_msg() fills the data field of the given message with the given payload.
+ * Returns void.
+ */
+void make_msg(struct msg *message, char *payload){
+  for (int i = 0; i < MESSAGE_LENGTH; i++){
+    message->data[i] = payload[i];
+  }
+}
 
  /*
   * corrupted() checks whether the data contained in the message is corrupted
   */
  int corruptedHuh(struct pkt *packet){
    int newChecksum = getChecksum(packet->payload, packet->seqnum, packet->acknum);
-   if(newChecksum != packet->checksum){
-     // printf("*****Corrupted!*****\n");
-     // printf("newChecksum %d  checksum %d", newChecksum, packet->checksum);
+   if(newChecksum != packet->checksum){ // packet is corrupted!
      return TRUE;
    }
    else{
@@ -111,12 +123,6 @@ static char *ackMsg = "ACK";
   * in-order, and correctly, to the receiving side upper layer.
   */
  void A_output(struct msg message) {
-   // printf("Packet sent in A_output: seq%d ", aSeq);
-   // printf("bufferHead%d  bufferBase%d", bufferHead,bufferBase);
-   // for (int i=0; i<MESSAGE_LENGTH; i++)
-   //   printf("%c", message.data[i]);
-   // printf("\n");
-   // printf("length of A_out message:%d\n", strlen(message.data));
    if(aStatus == WAITING){  // if there is a packet being sent
      msgAsndBuffer[bufferHead%BUFFER_SIZE] = message;
    }
@@ -143,12 +149,8 @@ static char *ackMsg = "ACK";
   * packet is the (possibly corrupted) packet sent from the B-side.
   */
  void A_input(struct pkt packet) {
-   // printf("***A seq%d aSeq%d\n",packet.seqnum,aSeq);
    if(!corruptedHuh(&packet) && packet.seqnum == aSeq && !strcmp(ackMsg,packet.payload)){
-     // printf("*****correct ack!");
      stopTimer(AEntity);
-     // pktcount++;
-     // printf("Count%d", pktcount);
      aStatus = RECEIVING;
      aSeq = flip(aSeq);
      if(bufferBase != bufferHead){
@@ -177,7 +179,6 @@ static char *ackMsg = "ACK";
    aSeq = 0;
    bufferHead = 0;
    bufferBase = 0;
-   // *pkts2snd = createQueue();
  }
 
 
@@ -194,18 +195,13 @@ static char *ackMsg = "ACK";
  void B_input(struct pkt packet){
    printf("\n");
    if(!corruptedHuh(&packet) && packet.seqnum == bSeq){ // correct package is received
-     // printf("***A correct packet received!!\n");
      make_msg(&msg2snd, packet.payload);
-     // printf("length of message:%d\n", strlen(msg2snd.data));
      tolayer5(BEntity,msg2snd);
-     // printf("bSeq%d\n",bSeq);
      make_pkt(&pktBsnd, bSeq, bSeq, ackMsg);
      tolayer3(BEntity,pktBsnd);
      bSeq = flip(bSeq);
    }
    else if(!corruptedHuh(&packet) && packet.seqnum != bSeq){ // duplicate message received
-     // printf("***B: wrong seq%d correct seq%d\n",packet.seqnum,bSeq);
-     // make_pkt(&pktBsnd, (bSeq+1) % 2, (bSeq+1) % 2, ackMsg); //this could probably be left out
      tolayer3(BEntity,pktBsnd);
    }
  }

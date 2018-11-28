@@ -123,8 +123,6 @@ double  GetRandomNumber( );
 *****************************************************************************/
 
 int main( int argc, char *argv[] )     {
-  // printf("Size of int: ");
-  // printf(sizeof(int));
     struct event *eventptr;
     struct msg   msg2give;
     struct pkt   pkt2give;
