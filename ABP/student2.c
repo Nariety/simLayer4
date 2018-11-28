@@ -93,8 +93,8 @@ void make_msg(struct msg *message, char *payload){
 int corruptedHuh(struct pkt *packet){
   int newChecksum = getChecksum(packet->payload, packet->seqnum, packet->acknum);
   if(newChecksum != packet->checksum){
-    printf("*****Corrupted!*****\n");
-    printf("newChecksum %d  checksum %d", newChecksum, packet->checksum);
+    // printf("*****Corrupted!*****\n");
+    // printf("newChecksum %d  checksum %d", newChecksum, packet->checksum);
     return TRUE;
   }
   else{
@@ -191,7 +191,7 @@ void A_init() {
  * packet is the (possibly corrupted) packet sent from the A-side.
  */
 void B_input(struct pkt packet){
-  printf("B_input line \n");
+  printf("\n");
   if(!corruptedHuh(&packet) && packet.seqnum == bSeq){ // correct package is received
     // printf("***A correct packet received!!\n");
     make_msg(&msg2snd, packet.payload);
@@ -203,7 +203,7 @@ void B_input(struct pkt packet){
     bSeq = flip(bSeq);
   }
   else if(!corruptedHuh(&packet) && packet.seqnum != bSeq){ // duplicate message received
-    printf("***B: wrong seq%d correct seq%d\n",packet.seqnum,bSeq);
+    // printf("***B: wrong seq%d correct seq%d\n",packet.seqnum,bSeq);
     // make_pkt(&pktBsnd, (bSeq+1) % 2, (bSeq+1) % 2, ackMsg); //this could probably be left out
     tolayer3(BEntity,pktBsnd);
   }
