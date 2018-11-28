@@ -24,7 +24,10 @@ To clean the complied files, type in terminal
 Please see ExampleOutputTraces_x_hliang2.pdf (where x is a number from 1 to 3)
 for more examples.
 
-Note: sometimes the program outputs warning "TOLAYER5:  PANIC!!  Data Received
+Note:
+1. The recommended mean time between packets value for running this program is
+at least 1000.
+2. Sometimes the program outputs warning "TOLAYER5:  PANIC!!  Data Received
 in this packet are wrong". However, the message sent from layer5 on A-side is
 identical to the message sent to layer 5 on B-side. The cause is unknown at this
 moment but because the messages on both layer5's are the same, the ABP is still
